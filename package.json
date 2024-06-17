@@ -16,7 +16,7 @@
     "discord.js": "^13.17.1",
     "mongoose": "^8.4.1",
     "noblox.js": "^4.15.1",
-    "roblox-js": "^4.0.4"
+    "roblox-js": "^3.0.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.3"

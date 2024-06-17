@@ -1,0 +1,24 @@
+{
+  "name": "lockedindevs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@discordjs/rest": "^2.3.0",
+    "discord-api-types": "^0.37.89",
+    "discord.js": "^13.17.1",
+    "mongoose": "^8.4.1",
+    "noblox.js": "^4.15.1",
+    "roblox-js": "^4.0.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}

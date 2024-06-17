@@ -63,13 +63,11 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Logging Functionality
-const LOG_CHANNEL_NAME = 'logs'; // Change this to the name of your log channel
-const ADMIN_USER_ID = '1139185365597573180'; // Change this to the ID of the user to notify
+const LOG_CHANNEL_NAME = 'logs'; 
+const ADMIN_USER_ID = '1139185365597573180'; 
 
-// Event listener for message deletions
 client.on('messageDelete', async (message) => {
-  if (message.partial) await message.fetch(); // Fetch partial messages
+  if (message.partial) await message.fetch();
 
   const logChannel = message.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
@@ -86,7 +84,6 @@ client.on('messageDelete', async (message) => {
 
   logChannel.send({ embeds: [embed] });
 
-  // If the message was deleted from the logs channel, notify the admin user
   if (message.channel.id === logChannel.id) {
     try {
       const fetchedLogs = await message.guild.fetchAuditLogs({
@@ -119,7 +116,6 @@ client.on('messageDelete', async (message) => {
 
         await adminUser.send({ embeds: [dmEmbed] });
 
-        // Send the removed embed itself
         await adminUser.send({ embeds: [embed] });
       }
     } catch (error) {
@@ -128,7 +124,6 @@ client.on('messageDelete', async (message) => {
   }
 });
 
-// Event listener for message edits
 client.on('messageUpdate', async (oldMessage, newMessage) => {
   if (oldMessage.partial) await oldMessage.fetch();
   if (newMessage.partial) await newMessage.fetch();
@@ -151,7 +146,6 @@ client.on('messageUpdate', async (oldMessage, newMessage) => {
   logChannel.send({ embeds: [embed] });
 });
 
-// Event listener for user joins
 client.on('guildMemberAdd', async (member) => {
   const logChannel = member.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
@@ -168,7 +162,6 @@ client.on('guildMemberAdd', async (member) => {
   logChannel.send({ embeds: [embed] });
 });
 
-// Event listener for user leaves
 client.on('guildMemberRemove', async (member) => {
   const logChannel = member.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;

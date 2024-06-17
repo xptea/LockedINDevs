@@ -23,10 +23,8 @@ module.exports = {
       const userId = await noblox.getIdFromUsername(username);
       const userInfo = await noblox.getPlayerInfo(userId);
 
-      // Check if the Roblox ID is already verified
       const existingUser = await User.findOne({ robloxId: userId });
       if (existingUser) {
-        // Notify the user they are already verified and assign the member role
         const memberRole = interaction.guild.roles.cache.get('1251654234059833494');
         if (memberRole) {
           await interaction.member.roles.add(memberRole).catch(console.error);
@@ -53,7 +51,6 @@ module.exports = {
             .setStyle('SECONDARY'),
         );
 
-      // Send a private reply
       await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 
       const filter = i => (i.customId === 'check_verification' || i.customId === 'new_phrase') && i.user.id === interaction.user.id;
@@ -73,20 +70,16 @@ module.exports = {
               });
               await newUser.save();
       
-              // Assign the member roles
               const memberRole = interaction.guild.roles.cache.get('1251654234059833494');
 
               if (memberRole) {
                 await interaction.member.roles.add(memberRole).catch(console.error);
               }
       
-              // Find the logs channel
               const logsChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs');
               if (logsChannel) {
-                // Format the date to a readable format
                 const verificationTime = joinTimestamp.toLocaleString('en-US', { timeZone: 'America/New_York' });
       
-                // Send an embed to the logs channel
                 const verificationLogEmbed = new MessageEmbed()
                   .setTitle('User Verification Log')
                   .setDescription(`**Discord User:** ${interaction.user.tag}\n**Roblox Username:** ${userInfo.username}\n**Roblox ID:** ${userId}\n**Time:** ${verificationTime}`)

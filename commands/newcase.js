@@ -24,7 +24,6 @@ module.exports = {
         .setDescription('Duration (e.g., 10m for 10 minutes, 10d for 10 days)')
         .setRequired(false)),
   async execute(interaction) {
-    // Check for necessary permissions
     if (!interaction.member.permissions.has('MANAGE_MESSAGES')) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
@@ -34,10 +33,9 @@ module.exports = {
     const reason = interaction.options.getString('reason');
     const timeInput = interaction.options.getString('time');
 
-    // Parse the time input
     let timeInMinutes = null;
     if (timeInput) {
-      const timePattern = /^(\d+)([md])$/; // Matches digits followed by 'm' or 'd'
+      const timePattern = /^(\d+)([md])$/;
       const match = timeInput.match(timePattern);
       if (match) {
         const value = parseInt(match[1]);
@@ -45,20 +43,18 @@ module.exports = {
         if (unit === 'm') {
           timeInMinutes = value;
         } else if (unit === 'd') {
-          timeInMinutes = value * 1440; // Convert days to minutes
+          timeInMinutes = value * 1440;
         }
       }
     }
 
     try {
-      // Find the user in the database
       const dbUser = await User.findOne({ discordId: user.id });
 
       if (!dbUser) {
         return interaction.reply({ content: 'User not found in the database.', ephemeral: true });
       }
 
-      // Generate a unique case ID
       let caseId;
       let isUnique = false;
       while (!isUnique) {
@@ -69,7 +65,6 @@ module.exports = {
         }
       }
 
-      // Create a new embed for the case
       let embed = new MessageEmbed()
         .setTitle(`Case ${caseId}`)
         .setDescription(`**User:** ${user}\n**Proof:** ${proof}\n**Reason:** ${reason}`)
@@ -152,7 +147,6 @@ module.exports = {
                 actionTaken = true;
                 break;
               case 'warn':
-                // Implement your warn logic here
                 actionTaken = true;
                 break;
               case 'timeout':
@@ -160,15 +154,13 @@ module.exports = {
                   await i.update({ content: 'Please specify the duration for the timeout (e.g., 10m for 10 minutes).', embeds: [embed], components: [row, rowSubmit] });
                   return;
                 }
-                await user.timeout(timeInMinutes * 60 * 1000, reason); // Convert minutes to milliseconds and apply timeout
+                await user.timeout(timeInMinutes * 60 * 1000, reason);
                 actionTaken = true;
                 break;
             }
 
             if (actionTaken) {
               await i.update({ content: `Action '${action}' performed.`, embeds: [], components: [], ephemeral: true });
-
-              // Log the action
               const logEntry = new ModerationLog({
                 caseId: caseId,
                 moderator: i.user.tag,
@@ -180,7 +172,6 @@ module.exports = {
               });
               logEntry.save();
 
-              // Log the action to the logs channel
               const logsChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs' && channel.type === 'GUILD_TEXT');
               if (logsChannel) {
                 const logEmbed = new MessageEmbed()

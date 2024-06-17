@@ -28,17 +28,14 @@ module.exports = {
         return interaction.reply({ content: 'User not found in the server.', ephemeral: true });
       }
 
-      // Find the user in the database
       const dbUser = await User.findOne({ discordId: user.id });
 
       if (!dbUser) {
         return interaction.reply({ content: 'User not found in the database.', ephemeral: true });
       }
 
-      // Find all cases for the user
       let cases = await ModerationLog.find({ target: user.user.tag }).sort({ timestamp: -1 });
 
-      // Apply filter if specified
       if (filter) {
         cases = cases.filter(caseEntry => caseEntry.action.toLowerCase() === filter.toLowerCase());
       }
@@ -47,7 +44,6 @@ module.exports = {
         return interaction.reply({ content: `No cases found for ${user}.`, ephemeral: true });
       }
 
-      // Count actions
       const counts = {
         ban: 0,
         kick: 0,
@@ -62,12 +58,10 @@ module.exports = {
         }
       });
 
-      // Pagination variables
       const casesPerPage = 5;
       const totalPages = Math.ceil(cases.length / casesPerPage);
       let currentPage = 0;
 
-      // Function to generate an embed for a specific page
       const generateEmbed = (page) => {
         const start = page * casesPerPage;
         const end = start + casesPerPage;
@@ -108,10 +102,7 @@ module.exports = {
             .setDisabled(currentPage === totalPages - 1)
         );
 
-      // Send the initial embed
       const message = await interaction.reply({ embeds: [generateEmbed(currentPage)], components: [row], ephemeral: true, fetchReply: true });
-
-      // Create a message component collector
       const collector = message.createMessageComponentCollector({ componentType: 'BUTTON', time: 50000 });
 
       collector.on('collect', async i => {
@@ -122,7 +113,6 @@ module.exports = {
             currentPage++;
           }
 
-          // Update the embed and buttons
           await i.update({
             embeds: [generateEmbed(currentPage)],
             components: [
@@ -152,7 +142,6 @@ module.exports = {
 
       collector.on('end', async collected => {
         try {
-          // Delete the message after the collector ends
           await message.delete();
         } catch (error) {
           console.error('An error occurred while deleting the message:', error);

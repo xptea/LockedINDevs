@@ -3,6 +3,7 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const mongoose = require('mongoose');
 const fs = require('fs');
+const moment = require('moment-timezone');
 const config = require('./config.json');
 const User = require('./models/user');
 
@@ -19,10 +20,7 @@ const client = new Client({
 });
 client.commands = new Collection();
 
-mongoose.connect(config.mongodbUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(config.mongodbUri);
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
@@ -39,7 +37,7 @@ client.once('ready', async () => {
 
   try {
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, '1251530293295190056'),
+      Routes.applicationGuildCommands(client.user.id, config.guildId),
       { body: commands }
     );
     console.log('Successfully registered application commands.');
@@ -59,12 +57,16 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
-    await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    try {
+      await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    } catch (err) {
+      console.error('Failed to reply to interaction:', err);
+    }
   }
 });
 
 const LOG_CHANNEL_NAME = 'logs'; 
-const ADMIN_USER_ID = '1139185365597573180'; 
+const ADMIN_USER_ID = config.adminUserId; 
 
 client.on('messageDelete', async (message) => {
   if (message.partial) await message.fetch();
@@ -72,13 +74,15 @@ client.on('messageDelete', async (message) => {
   const logChannel = message.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
 
+  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
   const embed = new MessageEmbed()
     .setTitle('Message Deleted')
     .setColor('#FF0000')
     .addFields(
       { name: 'Author', value: `<@${message.author.id}>`, inline: true },
       { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
-      { name: 'Message', value: message.content ? message.content : 'No content', inline: false }
+      { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
+      { name: 'Timestamp', value: timestamp, inline: false }
     )
     .setTimestamp();
 
@@ -110,12 +114,12 @@ client.on('messageDelete', async (message) => {
             { name: 'Deleted By', value: executor, inline: true },
             { name: 'Author', value: `<@${message.author.id}>`, inline: true },
             { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
-            { name: 'Message', value: message.content ? message.content : 'No content', inline: false }
+            { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
+            { name: 'Timestamp', value: timestamp, inline: false }
           )
           .setTimestamp();
 
         await adminUser.send({ embeds: [dmEmbed] });
-
         await adminUser.send({ embeds: [embed] });
       }
     } catch (error) {
@@ -132,6 +136,7 @@ client.on('messageUpdate', async (oldMessage, newMessage) => {
   const logChannel = oldMessage.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
 
+  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
   const embed = new MessageEmbed()
     .setTitle('Message Edited')
     .setColor('#FFFF00')
@@ -139,7 +144,8 @@ client.on('messageUpdate', async (oldMessage, newMessage) => {
       { name: 'Author', value: `<@${oldMessage.author.id}>`, inline: true },
       { name: 'Channel', value: `<#${oldMessage.channel.id}>`, inline: true },
       { name: 'Old Message', value: oldMessage.content ? oldMessage.content : 'No content', inline: false },
-      { name: 'New Message', value: newMessage.content ? newMessage.content : 'No content', inline: false }
+      { name: 'New Message', value: newMessage.content ? newMessage.content : 'No content', inline: false },
+      { name: 'Timestamp', value: timestamp, inline: false }
     )
     .setTimestamp();
 
@@ -150,12 +156,14 @@ client.on('guildMemberAdd', async (member) => {
   const logChannel = member.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
 
+  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
   const embed = new MessageEmbed()
     .setTitle('User Joined')
     .setColor('#00FF00')
     .addFields(
       { name: 'User', value: `<@${member.user.id}>`, inline: true },
-      { name: 'ID', value: member.user.id, inline: true }
+      { name: 'ID', value: member.user.id, inline: true },
+      { name: 'Timestamp', value: timestamp, inline: false }
     )
     .setTimestamp();
 
@@ -166,12 +174,14 @@ client.on('guildMemberRemove', async (member) => {
   const logChannel = member.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
   if (!logChannel) return;
 
+  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
   const embed = new MessageEmbed()
     .setTitle('User Left')
     .setColor('#FF0000')
     .addFields(
       { name: 'User', value: `<@${member.user.id}>`, inline: true },
-      { name: 'ID', value: member.user.id, inline: true }
+      { name: 'ID', value: member.user.id, inline: true },
+      { name: 'Timestamp', value: timestamp, inline: false }
     )
     .setTimestamp();
 

@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const noblox = require('noblox.js');
 const User = require('../models/user');
+const moment = require('moment-timezone');
 
 function generateRandomPhrase() {
   const words = ["apple", "banana", "carrot", "cat", "house", "flower", "giraffe"];
@@ -61,7 +62,7 @@ module.exports = {
           try {
             const profile = await noblox.getPlayerInfo(userId);
             if (profile.blurb.includes(randomPhrase)) {
-              const joinTimestamp = new Date();
+              const joinTimestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
               const newUser = new User({
                 discordId: interaction.user.id,
                 robloxId: userId,
@@ -78,11 +79,9 @@ module.exports = {
       
               const logsChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs');
               if (logsChannel) {
-                const verificationTime = joinTimestamp.toLocaleString('en-US', { timeZone: 'America/New_York' });
-      
                 const verificationLogEmbed = new MessageEmbed()
                   .setTitle('User Verification Log')
-                  .setDescription(`**Discord User:** ${interaction.user.tag}\n**Roblox Username:** ${userInfo.username}\n**Roblox ID:** ${userId}\n**Time:** ${verificationTime}`)
+                  .setDescription(`**Discord User:** ${interaction.user.tag}\n**Roblox Username:** ${userInfo.username}\n**Roblox ID:** ${userId}\n**Time:** ${joinTimestamp}`)
                   .setColor('#00AAFF');
                 logsChannel.send({ embeds: [verificationLogEmbed] }).catch(console.error);
               }
@@ -108,13 +107,17 @@ module.exports = {
 
       collector.on('end', collected => {
         if (collected.size === 0) {
-          interaction.editReply({ content: 'Verification process timed out.', embeds: [], components: [] });
+          interaction.editReply({ content: 'Verification process timed out.', embeds: [], components: [] }).catch(console.error);
         }
       });
 
     } catch (error) {
       console.error('Error during verification process:', error);
-      await interaction.reply({ content: 'Could not verify the Roblox account due to an error. Please try again later.', ephemeral: true });
+      try {
+        await interaction.reply({ content: 'Could not verify the Roblox account due to an error. Please try again later.', ephemeral: true });
+      } catch (err) {
+        console.error('Failed to reply to interaction:', err);
+      }
     }
   },
 };

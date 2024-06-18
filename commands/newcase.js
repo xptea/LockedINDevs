@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu } = require('discord.js');
 const ModerationLog = require('../models/ModerationLog');
 const User = require('../models/user');
+const moment = require('moment-timezone');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -160,17 +161,19 @@ module.exports = {
             }
 
             if (actionTaken) {
+              const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
               await i.update({ content: `Action '${action}' performed.`, embeds: [], components: [], ephemeral: true });
               const logEntry = new ModerationLog({
                 caseId: caseId,
                 moderator: i.user.tag,
+                moderatorId: i.user.id, // Add this line
                 action: action,
                 target: user.user.tag,
                 reason: reason,
                 proof: proof,
-                timestamp: new Date()
+                timestamp: timestamp
               });
-              logEntry.save();
+              await logEntry.save();
 
               const logsChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs' && channel.type === 'GUILD_TEXT');
               if (logsChannel) {
@@ -185,7 +188,8 @@ module.exports = {
                     { name: 'Moderator ID', value: interaction.user.id, inline: true },
                     { name: 'Reason', value: reason },
                     { name: 'Proof', value: proof },
-                    { name: 'Time', value: timeInput || 'No time specified' }
+                    { name: 'Time', value: timeInput || 'No time specified' },
+                    { name: 'Timestamp', value: timestamp }
                   )
                   .setTimestamp();
                 await logsChannel.send({ embeds: [logEmbed] });

@@ -2,6 +2,24 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const ModerationLog = require('../models/ModerationLog');
 const User = require('../models/user');
+const moment = require('moment-timezone');
+
+const MAX_RETRIES = 3;
+
+async function deleteMessageWithRetries(message, retries = MAX_RETRIES) {
+  try {
+    await message.delete();
+    console.log('Message deleted successfully.');
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`Failed to delete message. Retrying... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before retrying
+      return deleteMessageWithRetries(message, retries - 1);
+    } else {
+      console.error('Failed to delete message after multiple attempts:', error);
+    }
+  }
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -76,10 +94,11 @@ module.exports = {
           );
 
         currentCases.forEach(caseEntry => {
+          const timestamp = moment(caseEntry.timestamp, 'DD/MM/YYYY hh:mm A').tz('America/New_York').format('DD/MM/YYYY hh:mm A');
           embed.addFields(
             {
               name: `Case ${caseEntry.caseId}`,
-              value: `**Action:** ${caseEntry.action}\n**Reason:** ${caseEntry.reason}\n**Proof:** ${caseEntry.proof}\n**Moderator:** ${caseEntry.moderator} (${caseEntry.moderatorId || 'Unknown'})\n**Timestamp:** ${caseEntry.timestamp}`,
+              value: `**Action:** ${caseEntry.action}\n**Reason:** ${caseEntry.reason}\n**Proof:** ${caseEntry.proof}\n**Moderator:** ${caseEntry.moderator} (${caseEntry.moderatorId || 'Unknown'})\n**Timestamp:** ${timestamp}`,
               inline: false
             }
           );
@@ -142,7 +161,7 @@ module.exports = {
 
       collector.on('end', async collected => {
         try {
-          await message.delete();
+          await deleteMessageWithRetries(message);
         } catch (error) {
           console.error('An error occurred while deleting the message:', error);
         }

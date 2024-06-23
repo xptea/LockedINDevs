@@ -5,7 +5,7 @@ const User = require('../models/user');
 const moment = require('moment-timezone');
 
 function generateRandomPhrase() {
-  const words = ["apple", "banana", "carrot", "cat", "house", "flower", "giraffe"];
+  const words = ["apple", "carrot", "cat", "house", "flower", "giraffe"];
   return `${words[Math.floor(Math.random() * words.length)]}-${words[Math.floor(Math.random() * words.length)]}-${words[Math.floor(Math.random() * words.length)]}`;
 }
 
@@ -33,7 +33,7 @@ module.exports = {
         return interaction.reply({ content: `<@${interaction.user.id}>, you have already been verified as **${existingUser.robloxUsername}** and have been assigned the member role.`, ephemeral: true });
       }
 
-      const randomPhrase = generateRandomPhrase();
+      let randomPhrase = generateRandomPhrase();
       const embed = new MessageEmbed()
         .setTitle('Roblox Account Verification')
         .setDescription(`To verify your Roblox account, please update your Roblox bio with the following phrase:\n\n**${randomPhrase}**\n\nOnce you have updated your bio, click the "Check Verification" button below.`)
@@ -95,10 +95,10 @@ module.exports = {
             await i.update({ content: 'Error checking verification. Please try again later.', embeds: [], components: [] });
           }
         } else if (i.customId === 'new_phrase') {
-          const newPhrase = generateRandomPhrase();
+          randomPhrase = generateRandomPhrase();
           const newEmbed = new MessageEmbed()
             .setTitle('Roblox Account Verification')
-            .setDescription(`To verify your Roblox account, please update your Roblox bio with the following phrase:\n\n**${newPhrase}**\n\nOnce you have updated your bio, click the "Check Verification" button below.`)
+            .setDescription(`To verify your Roblox account, please update your Roblox bio with the following phrase:\n\n**${randomPhrase}**\n\nOnce you have updated your bio, click the "Check Verification" button below.`)
             .setColor('#00AAFF')
             .setFooter({ text: 'Roblox Verification' });
           await i.update({ embeds: [newEmbed], components: [row] });

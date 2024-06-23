@@ -20,7 +20,10 @@ const client = new Client({
 });
 client.commands = new Collection();
 
-mongoose.connect(config.mongodbUri);
+mongoose.connect(config.mongodbUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
@@ -65,91 +68,117 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-const LOG_CHANNEL_NAME = 'logs'; 
-const ADMIN_USER_ID = config.adminUserId; 
+const LOG_CHANNEL_NAME = 'logs';
+const ADMIN_USER_ID = config.adminUserId;
+
+client.on('messageCreate', async message => {
+  if (message.channel.id === config.verifyChannelId && !message.content.startsWith('/verify')) {
+    try {
+      await message.delete();
+    } catch (error) {
+      if (error.code !== 10008) { // Ignore "Unknown Message" errors
+        console.error('Failed to delete message:', error);
+      }
+    }
+  }
+});
 
 client.on('messageDelete', async (message) => {
-  if (message.partial) await message.fetch();
+  try {
+    if (message.partial) await message.fetch();
+    if (message.author.id === client.user.id) return; // Prevent bot from logging its own deletions
 
-  const logChannel = message.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
-  if (!logChannel) return;
+    const logChannel = message.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
+    if (!logChannel) return;
 
-  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
-  const embed = new MessageEmbed()
-    .setTitle('Message Deleted')
-    .setColor('#FF0000')
-    .addFields(
-      { name: 'Author', value: `<@${message.author.id}>`, inline: true },
-      { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
-      { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
-      { name: 'Timestamp', value: timestamp, inline: false }
-    )
-    .setTimestamp();
+    const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
+    const embed = new MessageEmbed()
+      .setTitle('Message Deleted')
+      .setColor('#FF0000')
+      .addFields(
+        { name: 'Author', value: `<@${message.author.id}>`, inline: true },
+        { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
+        { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
+        { name: 'Timestamp', value: timestamp, inline: false }
+      )
+      .setTimestamp();
 
-  logChannel.send({ embeds: [embed] });
+    logChannel.send({ embeds: [embed] });
 
-  if (message.channel.id === logChannel.id) {
-    try {
-      const fetchedLogs = await message.guild.fetchAuditLogs({
-        limit: 1,
-        type: 'MESSAGE_DELETE',
-      });
-      const deletionLog = fetchedLogs.entries.first();
-      let executor = 'Unknown';
+    if (message.channel.id === logChannel.id) {
+      try {
+        const fetchedLogs = await message.guild.fetchAuditLogs({
+          limit: 1,
+          type: 'MESSAGE_DELETE',
+        });
+        const deletionLog = fetchedLogs.entries.first();
+        let executor = 'Unknown';
 
-      if (deletionLog) {
-        const { executor: logExecutor, target, extra } = deletionLog;
-        if ((target.id === message.author.id) && (extra.channel.id === message.channel.id) && (Date.now() - deletionLog.createdTimestamp < 5000)) {
-          executor = logExecutor.tag;
+        if (deletionLog) {
+          const { executor: logExecutor, target, extra } = deletionLog;
+          if ((target.id === message.author.id) && (extra.channel.id === message.channel.id) && (Date.now() - deletionLog.createdTimestamp < 5000)) {
+            executor = logExecutor.tag;
+          }
         }
-      }
 
-      const adminUser = await client.users.fetch(ADMIN_USER_ID);
-      if (adminUser) {
-        const dmEmbed = new MessageEmbed()
-          .setTitle('Log Message Deleted')
-          .setColor('#FF0000')
-          .setDescription('A message was deleted from the logs channel')
-          .addFields(
-            { name: 'Deleted By', value: executor, inline: true },
-            { name: 'Author', value: `<@${message.author.id}>`, inline: true },
-            { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
-            { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
-            { name: 'Timestamp', value: timestamp, inline: false }
-          )
-          .setTimestamp();
+        const adminUser = await client.users.fetch(ADMIN_USER_ID);
+        if (adminUser) {
+          const dmEmbed = new MessageEmbed()
+            .setTitle('Log Message Deleted')
+            .setColor('#FF0000')
+            .setDescription('A message was deleted from the logs channel')
+            .addFields(
+              { name: 'Deleted By', value: executor, inline: true },
+              { name: 'Author', value: `<@${message.author.id}>`, inline: true },
+              { name: 'Channel', value: `<#${message.channel.id}>`, inline: true },
+              { name: 'Message', value: message.content ? message.content : 'No content', inline: false },
+              { name: 'Timestamp', value: timestamp, inline: false }
+            )
+            .setTimestamp();
 
-        await adminUser.send({ embeds: [dmEmbed] });
-        await adminUser.send({ embeds: [embed] });
+          await adminUser.send({ embeds: [dmEmbed] });
+          await adminUser.send({ embeds: [embed] });
+        }
+      } catch (error) {
+        console.error('Error fetching audit logs:', error);
       }
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
+    }
+  } catch (error) {
+    if (error.code !== 10008) { // Ignore "Unknown Message" errors
+      console.error('Failed to handle message delete event:', error);
     }
   }
 });
 
 client.on('messageUpdate', async (oldMessage, newMessage) => {
-  if (oldMessage.partial) await oldMessage.fetch();
-  if (newMessage.partial) await newMessage.fetch();
-  if (oldMessage.content === newMessage.content) return;
+  try {
+    if (oldMessage.partial) await oldMessage.fetch();
+    if (newMessage.partial) await newMessage.fetch();
+    if (oldMessage.content === newMessage.content) return;
+    if (newMessage.author.id === client.user.id) return; // Prevent bot from logging its own edits
 
-  const logChannel = oldMessage.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
-  if (!logChannel) return;
+    const logChannel = oldMessage.guild.channels.cache.find(channel => channel.name === LOG_CHANNEL_NAME && channel.isText());
+    if (!logChannel) return;
 
-  const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
-  const embed = new MessageEmbed()
-    .setTitle('Message Edited')
-    .setColor('#FFFF00')
-    .addFields(
-      { name: 'Author', value: `<@${oldMessage.author.id}>`, inline: true },
-      { name: 'Channel', value: `<#${oldMessage.channel.id}>`, inline: true },
-      { name: 'Old Message', value: oldMessage.content ? oldMessage.content : 'No content', inline: false },
-      { name: 'New Message', value: newMessage.content ? newMessage.content : 'No content', inline: false },
-      { name: 'Timestamp', value: timestamp, inline: false }
-    )
-    .setTimestamp();
+    const timestamp = moment().tz('America/New_York').format('DD/MM/YYYY hh:mm A');
+    const embed = new MessageEmbed()
+      .setTitle('Message Edited')
+      .setColor('#FFFF00')
+      .addFields(
+        { name: 'Author', value: `<@${oldMessage.author.id}>`, inline: true },
+        { name: 'Channel', value: `<#${oldMessage.channel.id}>`, inline: true },
+        { name: 'Old Message', value: oldMessage.content ? oldMessage.content : 'No content', inline: false },
+        { name: 'New Message', value: newMessage.content ? newMessage.content : 'No content', inline: false },
+        { name: 'Timestamp', value: timestamp, inline: false }
+      )
+      .setTimestamp();
 
-  logChannel.send({ embeds: [embed] });
+    logChannel.send({ embeds: [embed] });
+  } catch (error) {
+    if (error.code !== 10008) { // Ignore "Unknown Message" errors
+      console.error('Failed to handle message update event:', error);
+    }
+  }
 });
 
 client.on('guildMemberAdd', async (member) => {

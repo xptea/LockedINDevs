@@ -3,6 +3,7 @@ const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const ModerationLog = require('../models/ModerationLog');
 const User = require('../models/user');
 const moment = require('moment-timezone');
+const config = require('../config.json');
 
 const MAX_RETRIES = 3;
 
@@ -11,7 +12,9 @@ async function deleteMessageWithRetries(message, retries = MAX_RETRIES) {
     await message.delete();
     console.log('Message deleted successfully.');
   } catch (error) {
-    if (retries > 0) {
+    if (error.code === 10008) { // Unknown Message error
+      console.error('Failed to delete message: Message not found.');
+    } else if (retries > 0) {
       console.warn(`Failed to delete message. Retrying... (${retries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before retrying
       return deleteMessageWithRetries(message, retries - 1);
@@ -38,6 +41,10 @@ module.exports = {
             .setDescription('Filter by action type (timeout, ban, kick, warn)')
             .setRequired(false))),
   async execute(interaction) {
+    if (!interaction.member.roles.cache.has(config.staffRoleId)) {
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    }
+
     try {
       const user = interaction.options.getMember('user');
       const filter = interaction.options.getString('filter');

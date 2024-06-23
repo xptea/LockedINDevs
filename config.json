@@ -1,7 +1,9 @@
   {
-    "token": "",
+    "token": "MTI1MTI5Nzg1MTE3MTE0NzgwNg.GktUkx.9arih9cmNMR78yiM_fuEAaP7Uv-KeC-A8SbEYc",
     "prefix": "!",
     "mongodbUri": "mongodb+srv://webster30956:gFB5lRilBgxSpjNa@cluster.9beac1v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster",
     "adminUserId": "1139185365597573180",
-    "guildId": "1251530293295190056"
+    "guildId": "1251530293295190056",
+    "verifyChannelId": "1254152750477086730",
+    "staffRoleId": "1254160799409111121" 
   }

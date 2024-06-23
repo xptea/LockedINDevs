@@ -3,6 +3,7 @@ const { MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu } = req
 const ModerationLog = require('../models/ModerationLog');
 const User = require('../models/user');
 const moment = require('moment-timezone');
+const config = require('../config.json');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,7 +26,7 @@ module.exports = {
         .setDescription('Duration (e.g., 10m for 10 minutes, 10d for 10 days)')
         .setRequired(false)),
   async execute(interaction) {
-    if (!interaction.member.permissions.has('MANAGE_MESSAGES')) {
+    if (!interaction.member.roles.cache.has(config.staffRoleId)) {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
@@ -166,7 +167,7 @@ module.exports = {
               const logEntry = new ModerationLog({
                 caseId: caseId,
                 moderator: i.user.tag,
-                moderatorId: i.user.id, // Add this line
+                moderatorId: i.user.id,
                 action: action,
                 target: user.user.tag,
                 reason: reason,

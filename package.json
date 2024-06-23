@@ -1,7 +1,7 @@
 {
   "name": "lockedindevs",
   "version": "1.0.0",
-  "description": "Locked in dev discord server bot made by web",
+  "description": "Locked in dev discord server bot made by Web",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -21,3 +21,4 @@
     "roblox-js": "^4.0.4"
   }
 }
+      

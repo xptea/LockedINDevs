@@ -26,7 +26,7 @@ module.exports = {
 
       const existingUser = await User.findOne({ robloxId: userId });
       if (existingUser) {
-        const memberRole = interaction.guild.roles.cache.get('1251654234059833494');
+        const memberRole = interaction.guild.roles.cache.get('1204619159464452146');
         if (memberRole) {
           await interaction.member.roles.add(memberRole).catch(console.error);
         }
@@ -70,13 +70,12 @@ module.exports = {
                 joinDate: joinTimestamp
               });
               await newUser.save();
-      
-              const memberRole = interaction.guild.roles.cache.get('1251654234059833494');
 
+              const memberRole = interaction.guild.roles.cache.get('1204619159464452146');
               if (memberRole) {
                 await interaction.member.roles.add(memberRole).catch(console.error);
               }
-      
+
               const logsChannel = interaction.guild.channels.cache.find(channel => channel.name === 'logs');
               if (logsChannel) {
                 const verificationLogEmbed = new MessageEmbed()
@@ -85,7 +84,7 @@ module.exports = {
                   .setColor('#00AAFF');
                 logsChannel.send({ embeds: [verificationLogEmbed] }).catch(console.error);
               }
-      
+
               await i.update({ content: `Successfully verified as ${userInfo.username} (ID: ${userId}) and assigned the member role.`, embeds: [], components: [] });
             } else {
               await i.update({ content: 'Bio verification failed. Please make sure your Roblox bio contains the correct phrase.', embeds: [], components: [] });
